@@ -1,0 +1,3 @@
+node_modules/
+**/container-2-dotnet/bin
+**/container-2-dotnet/obj

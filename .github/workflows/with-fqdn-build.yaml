@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=./with-fqdn-build.yaml
+name: With FQDN Build and Deploy
+on:
+  push:
+    branches: [ main ]
+    # Publish semver tags as releases.
+    tags: [ 'v*.*.*' ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        services: [ {'imageName': 'node', 'directory': './with-fqdn/container-1-node'}, {'imageName': 'dotnet', 'directory': './with-fqdn/container-2-dotnet'}]
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      containerImage-node: ${{ steps.image-tag.outputs.image-node }}
+      containerImage-dotnet: ${{ steps.image-tag.outputs.image-dotnet }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Login against a Docker registry except on PR
+      # https://github.com/docker/login-action
+      - name: Log into registry ${{ env.REGISTRY }}
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.services.imageName }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=ref,event=branch
+            type=sha
+  
+      # Build and push Docker image with Buildx (don't push on PR)
+      # https://github.com/docker/build-push-action
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ${{ matrix.services.directory }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      
+      - name: Output image tag
+        id: image-tag
+        run: echo "::set-output name=image-${{ matrix.services.imageName }}::${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.services.imageName }}:sha-$(git rev-parse --short HEAD)" | tr '[:upper:]' '[:lower:]'
+  
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy bicep
+        uses: azure/CLI@v1
+        with:
+          azcliversion: 2.29.2
+          inlineScript: |
+            az group create -g ${{ secrets.RESOURCE_GROUP }} -l canadacentral
+            az deployment group create -g ${{ secrets.RESOURCE_GROUP }} -f ./with-fqdn/deploy/main.bicep \
+             -p \
+                nodeImage='${{ needs.build.outputs.containerImage-node }}' \
+                nodePort=3000 \
+                dotnetImage='${{ needs.build.outputs.containerImage-dotnet }}' \
+                dotnetPort=80 \
+                registry=${{ env.REGISTRY }} \
+                registryUsername=${{ github.actor }} \
+                registryPassword=${{ secrets.PACKAGES_TOKEN }}

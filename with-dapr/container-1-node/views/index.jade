@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  h1= title
+  p Welcome to #{title}
+
+  br
+  form(action="/hello", method="get") 
+    input(type="submit", value="Say Hello to dotnetApp")
