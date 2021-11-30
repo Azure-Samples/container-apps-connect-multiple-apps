@@ -65,7 +65,7 @@ az containerapp create \
   --name dotnet-app-dapr \
   --resource-group 'sample-rg' \
   --environment 'sample-env' \
-  --image 'ghcr.io/azure-samples/container-sample-node-to-csharp/dotnet-dapr:main' \
+  --image 'ghcr.io/azure-samples/container-apps-connect-multiple-app/dotnet-dapr:main' \
   --target-port 80 \
   --dapr-app-id dotnet-app-dapr \
   --enable-dapr true \
@@ -76,7 +76,7 @@ az containerapp create \
   --name node-app-dapr \
   --resource-group 'sample-rg' \
   --environment 'sample-env' \
-  --image 'ghcr.io/azure-samples/container-sample-node-to-csharp/node-dapr:main' \
+  --image 'ghcr.io/azure-samples/container-apps-connect-multiple-app/node-dapr:main' \
   --target-port 3000 \
   --ingress 'external' \
   --environment-variables DOTNET_APP_ID=dotnet-app-dapr \
