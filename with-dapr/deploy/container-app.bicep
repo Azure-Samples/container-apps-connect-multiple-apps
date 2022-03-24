@@ -12,19 +12,18 @@ param environmentVars array = []
 @secure()
 param containerRegistryPassword string
 
-resource containerApp 'Microsoft.Web/containerApps@2021-03-01' = {
+resource containerApp 'Microsoft.App/containerApps@2022-01-01-preview' = {
   name: containerAppName
-  kind: 'containerapp'
   location: location
   properties: {
-    kubeEnvironmentId: environmentId
+    managedEnvironmentId: environmentId
     configuration: {
       secrets: [
         {
           name: 'registry-password'
           value: containerRegistryPassword
         }
-      ]      
+      ]
       registries: [
         {
           server: containerRegistry
@@ -35,6 +34,11 @@ resource containerApp 'Microsoft.Web/containerApps@2021-03-01' = {
       ingress: {
         external: isExternalIngress
         targetPort: containerPort
+      }
+      dapr: {
+        enabled: true
+        appPort: containerPort
+        appId: containerAppName
       }
     }
     template: {
@@ -47,11 +51,6 @@ resource containerApp 'Microsoft.Web/containerApps@2021-03-01' = {
       ]
       scale: {
         minReplicas: 0
-      }
-      dapr: {
-        enabled: true
-        appPort: containerPort
-        appId: containerAppName
       }
     }
   }
