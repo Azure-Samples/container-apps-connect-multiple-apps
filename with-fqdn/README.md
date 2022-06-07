@@ -50,7 +50,7 @@ az containerapp create \
 DOTNET_FQDN=$(az containerapp show \
   --resource-group 'sample-rg' \
   --name dotnet-app \
-  --query configuration.ingress.fqdn -o tsv)
+  --query properties.configuration.ingress.fqdn -o tsv)
 
 # Deploy the container-1-node node-app
 az containerapp create \
@@ -60,7 +60,6 @@ az containerapp create \
   --image 'ghcr.io/azure-samples/container-apps-connect-multiple-apps/node:main' \
   --target-port 3000 \
   --ingress 'external' \
-  --environment-variables DOTNET_FQDN=$DOTNET_FQDN \
-  --query configuration.ingress.fqdn
+  --env-vars DOTNET_FQDN=$DOTNET_FQDN
 ```
 
