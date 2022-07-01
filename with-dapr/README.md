@@ -79,7 +79,7 @@ az containerapp create \
   --image 'ghcr.io/azure-samples/container-apps-connect-multiple-apps/node-dapr:main' \
   --target-port 3000 \
   --ingress 'external' \
-  --environment-variables DOTNET_APP_ID=dotnet-app-dapr \
+  --env-vars DOTNET_APP_ID=dotnet-app-dapr \
   --dapr-app-id node-app-dapr \
   --enable-dapr true \
   --query configuration.ingress.fqdn
