@@ -60,7 +60,7 @@ az containerapp create \
   --image 'ghcr.io/azure-samples/container-apps-connect-multiple-apps/node:main' \
   --target-port 3000 \
   --ingress 'external' \
-  --environment-variables DOTNET_FQDN=$DOTNET_FQDN \
+  --env-vars DOTNET_FQDN=$DOTNET_FQDN \
   --query configuration.ingress.fqdn
 ```
 
